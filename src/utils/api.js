@@ -7,7 +7,7 @@ class Api {
         'Content-Type': options.headers['Content-Type']
       };
     }
-  
+
     getInitialCards() {
       return fetch(`${this._baseUrl}cards`, {
         method: 'GET',

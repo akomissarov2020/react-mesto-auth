@@ -7,27 +7,62 @@ import EditProfilePopup from './EditProfilePopup';
 import EditAvatarPopup from './EditAvatarPopup';
 import AddPlacePopup from './AddPlacePopup';
 import ConfirmPopup from './ConfirmPopup';
+import InfoTooltip from './InfoTooltip';
+import Login from './Login';
+import Register from './Register';
+import ProtectedRoute from './ProtectedRoute';
 import api from '../utils/api';
+import auth from '../utils/auth';
 import {CurrentUserContext} from '../contexts/CurrentUserContext';
 import profileAvatarPath from '../images/avatar.png';
+import { Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 
 function App() {
 
+  const navigate = useNavigate();
+
+  const [loggedIn, setLoggedIn] = React.useState(false);
   const [isEditAvatarPopupOpen, setIsEditAvatarPopupOpen] = React.useState(false);
   const [isEditProfilePopupOpen, setIsEditProfilePopupOpen] = React.useState(false);
   const [isAddPlacePopupOpen, setIsAddPlacePopupOpen] = React.useState(false);
   const [isConfirmPopupOpen, setIsConfirmPopupOpen] = React.useState(false);
+  const [isTooltipPopupOpen, setIsTooltipPopupOpen] = React.useState(false);
+  const [intoToolTipStatus, setIntoToolTipStatus] = React.useState(false);
   const [cardIdToBeDeleted, setCardIdToBeDeleted] = React.useState({});
   const [selectedCard, setSelectedCard] = React.useState({name: '', link: ''});
-  const [currentUser, setCurrentUser] = React.useState({avatar: profileAvatarPath});
+  const [currentUser, setCurrentUser] = React.useState({
+                                                    avatar: profileAvatarPath, 
+                                                    email: '', 
+                                                    _id: ''});
   const [cards, setCards] = React.useState([]);
   const [isLoadingSomething, setIsLoadingSomething] = React.useState(false);
 
   React.useEffect(()=>{
     setIsLoadingSomething(true);
+    
+    auth.user()
+    .then((res)=> {
+      setCurrentUser(prevState => ({
+        ...prevState,
+        email: res.data.email
+      }));
+      setLoggedIn(true);
+      redirectToRoot();
+    })
+    .catch((err) => {
+      console.log(err);
+      setLoggedIn(false);
+    })
+
     Promise.all([api.getUserInfo(), api.getInitialCards()])
     .then(([userData, initialCards]) => {
-      setCurrentUser(userData);
+      setCurrentUser(prevState => ({
+        ...prevState,
+        avatar: userData.avatar, 
+        name: userData.name,
+        about: userData.about,
+        _id: userData._id
+      }));
       setCards(initialCards);
     })
     .catch((err) => {
@@ -37,6 +72,10 @@ function App() {
       setIsLoadingSomething(false)
     });
   }, []);
+
+  function redirectToRoot() {
+    navigate("/");
+  }
 
   function handleEditAvatarClick() {
     setIsEditAvatarPopupOpen(true);
@@ -73,7 +112,11 @@ function App() {
     api.updateUserInfo(user)
     .then(
       (data) => {
-        setCurrentUser(data);
+        setCurrentUser(prevState => ({
+          ...prevState,
+          name: data.name,
+          about: data.about
+        }));
         closeAllPopups();
       })
     .catch((err) => {
@@ -88,8 +131,11 @@ function App() {
     setIsLoadingSomething(true);
     api.updateAvatar(user)
     .then(
-      (data) => {
-        setCurrentUser(data);
+      (currentUserdata) => {
+        setCurrentUser(prevState => ({
+          ...prevState,
+          avatar: currentUserdata.avatar
+        }));
         closeAllPopups();
       })
     .catch((err) => {
@@ -148,19 +194,88 @@ function App() {
     });
   }
 
+  function handleRegisterClick(data) {
+    
+    setIsLoadingSomething(true);
+    auth.register(data)
+      .then((data) => {
+        setIntoToolTipStatus(true);
+        setIsTooltipPopupOpen(true);
+      })
+      .catch((err) => {
+        console.log(4, data);
+        setIntoToolTipStatus(false);
+        setIsTooltipPopupOpen(true);
+        console.log(err);
+      })
+      .finally(() => {
+        setIsLoadingSomething(false)
+      });
+  }
+
+  function closeIntoTooltip() {
+    if (intoToolTipStatus) {
+      setIsTooltipPopupOpen(false);
+      navigate('/signin');
+    } else {
+      setIsTooltipPopupOpen(false);
+    }
+  }
+
+  function handleLoginClick(data) {
+    setIsLoadingSomething(true);
+    auth.login(data)
+      .then((res) => {
+        setLoggedIn(true);
+        setCurrentUser(prevState => ({
+          ...prevState,
+          email: res.data.email, 
+          _id: res.data._id
+        }));
+        navigate('/');
+      })
+      .catch((err) => {
+        setIntoToolTipStatus(false);
+        setIsTooltipPopupOpen(true);
+        console.log(err);
+      })
+      .finally(() => {
+        setIsLoadingSomething(false)
+      });
+  }
+
+  function handleLogout() {
+    auth.logout();
+    setLoggedIn(false);
+    navigate('/signin');
+  }
+
   return (
-    <CurrentUserContext.Provider value={currentUser}>
-      <Header />
-      <Main 
-        onEditProfile={handleEditProfileClick}  
-        onEditAvatar={handleEditAvatarClick} 
-        onAddPlace={handleAddPlaceClick} 
-        onCardClick={handleCardClick} 
-        cards={cards}
-        onCardLike={handleCardLike}
-        onCardDelete={handleConfirmation}
-      />
-      <Footer />
+    <CurrentUserContext.Provider value={currentUser}>    
+      <Header onLogout={handleLogout} />
+      <Routes>
+        <Route path="/signup" element={
+          <Register onRegister={handleRegisterClick} />
+          } />
+        <Route exact path="/" element={
+          <ProtectedRoute isLoggedIn={loggedIn}>
+            <Main 
+              onEditProfile={handleEditProfileClick}  
+              onEditAvatar={handleEditAvatarClick} 
+              onAddPlace={handleAddPlaceClick} 
+              onCardClick={handleCardClick} 
+              cards={cards}
+              onCardLike={handleCardLike}
+              onCardDelete={handleConfirmation}
+            />
+            <Footer />
+          </ProtectedRoute>
+        } />
+        <Route path="/signin" element={<Login 
+              onLogin={handleLoginClick}
+        />} />
+        <Route path="*" element={<Navigate to="/signin" />} />
+      </Routes>
       <EditProfilePopup 
         isOpen={isEditProfilePopupOpen} 
         onClose={closeAllPopups} 
@@ -185,6 +300,11 @@ function App() {
         onSubmit={handleCardDelete}
         isLoading={isLoadingSomething}
         cardToDelete={cardIdToBeDeleted}
+      />
+      <InfoTooltip 
+        status={intoToolTipStatus}
+        onClose={closeIntoTooltip} 
+        isOpen={isTooltipPopupOpen} 
       />
       <ImagePopup card={selectedCard} onClose={closeAllPopups} 
       />
