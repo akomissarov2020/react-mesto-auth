@@ -203,7 +203,6 @@ function App() {
         setIsTooltipPopupOpen(true);
       })
       .catch((err) => {
-        console.log(4, data);
         setIntoToolTipStatus(false);
         setIsTooltipPopupOpen(true);
         console.log(err);
