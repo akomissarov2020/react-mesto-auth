@@ -235,7 +235,6 @@ function App() {
     setIsLoadingSomething(true);
     auth.login(data)
       .then((data) => {
-        console.log(data);
         if (data.token) {
           localStorage.setItem("jwt", data.token);
           setLoggedIn(true);
