@@ -3,15 +3,19 @@ import PopupWithForm from './PopupWithForm';
 
 function EditAvatarPopup(props) {
 
-    const avatarRef = React.useRef(); 
+    const [avatar, setAvatar] = React.useState({value: ""});
+
+    function handleAvatarChange(e) {
+        setAvatar(({value: e.target.value}));
+    }
 
     React.useEffect(() => {
-        avatarRef.current.value = "";
+        setAvatar({value: ""});
     }, [props.isOpen]);
 
     function handleSubmit(e) {
         e.preventDefault();
-        props.onUpdateAvatar({avatar: avatarRef.current.value});
+        props.onUpdateAvatar({avatar: avatar.value});
     }
 
     return (
@@ -25,7 +29,13 @@ function EditAvatarPopup(props) {
             isLoading={props.isLoading}
             loadingText="Загружается..."
         >
-            <input ref={avatarRef} type="url" className="form__field" placeholder="Ссылка на картинку" name="avatar-link" required />
+            <input type="url" 
+                   className="form__field" 
+                   placeholder="Ссылка на картинку" 
+                   name="avatar-link" 
+                   value={avatar.value}
+                   onChange={handleAvatarChange}
+                   required />
             <span className="form__error-message avatar-link-error"></span>
         </PopupWithForm>
   );

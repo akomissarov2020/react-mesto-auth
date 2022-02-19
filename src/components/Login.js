@@ -6,7 +6,7 @@ function Login(props) {
     <>
       <AuthForm 
         name={props.name}
-        handleSubmit={props.handleSubmit}
+        handleSubmit={props.onLogin}
         formTitleText="Вход"
         formButtonText="Войти"
       />

@@ -6,7 +6,7 @@ function Register(props) {
       <>
         <AuthForm 
           name={props.name}
-          handleSubmit={props.handleSubmit}
+          handleSubmit={props.onRegister}
           formTitleText="Регистрация"
           formButtonText="Зарегистрироваться"
           formAdditionalText="Уже зарегистрированы? Войти"
