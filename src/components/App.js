@@ -41,18 +41,24 @@ function App() {
     setIsLoadingSomething(true);
     
     auth.user()
-    .then((res)=> {
-      setCurrentUser(prevState => ({
-        ...prevState,
-        email: res.data.email
-      }));
-      setLoggedIn(true);
-      redirectToRoot();
-    })
-    .catch((err) => {
-      console.log(err);
-      setLoggedIn(false);
-    })
+      .then((res)=> {
+        setCurrentUser(prevState => ({
+          ...prevState,
+          email: res.data.email
+        }));
+        setLoggedIn(true);
+        redirectToRoot();
+      })
+      .catch((err) => {
+        if (err.status === 400) {
+            console.log(`Токен не передан или передан не в том формате`);
+        } else if (err.status === 401) {
+            console.log(`Переданный токен некорректен`);
+        } else {
+          console.log(`Error: ${err.status}`);
+        }
+        setLoggedIn(false);
+      })
 
     Promise.all([api.getUserInfo(), api.getInitialCards()])
     .then(([userData, initialCards]) => {
@@ -203,9 +209,13 @@ function App() {
         setIsTooltipPopupOpen(true);
       })
       .catch((err) => {
+        if (err.status === 400) {
+          console.log(`некорректно заполнено одно из полей`);
+        } else {
+          console.log(`Error: ${err.status}`);
+        }
         setIntoToolTipStatus(false);
         setIsTooltipPopupOpen(true);
-        console.log(err);
       })
       .finally(() => {
         setIsLoadingSomething(false)
@@ -224,19 +234,26 @@ function App() {
   function handleLoginClick(data) {
     setIsLoadingSomething(true);
     auth.login(data)
-      .then((res) => {
-        setLoggedIn(true);
-        setCurrentUser(prevState => ({
-          ...prevState,
-          email: res.data.email, 
-          _id: res.data._id
-        }));
-        navigate('/');
+      .then((data) => {
+        console.log(data);
+        if (data.token) {
+          localStorage.setItem("jwt", data.token);
+          setLoggedIn(true);
+          redirectToRoot();
+        } else {
+          console.log(`ответ не содержит токен`);
+        }
       })
       .catch((err) => {
+        if (err.status === 400) {
+            console.log(`не передано одно из полей`);
+        } else if (err.status === 401) {
+            console.log(`пользователь с email не найден`);
+        } else {
+          console.log(`Error: ${err.status}`);
+        }
         setIntoToolTipStatus(false);
         setIsTooltipPopupOpen(true);
-        console.log(err);
       })
       .finally(() => {
         setIsLoadingSomething(false)

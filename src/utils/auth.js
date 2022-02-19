@@ -16,22 +16,7 @@ class AuthApi {
                 password: data.password
             })
           })
-        .then((res) => {
-            if (res.ok) {
-                return res.json();
-            } else if (res.status === 400) {
-                return Promise.reject(`не передано одно из полей`);
-            } else if (res.status === 401) {
-                return Promise.reject(`пользователь с email не найден`);
-            } 
-            return Promise.reject(`Error: ${res.status}`);
-        })
-        .then((data) => {
-            if (data.token) {
-                localStorage.setItem("jwt", data.token);
-                return this.user();
-            }
-        });
+        .then(this._checkResponse);
     }
   
     register(data) {
@@ -43,14 +28,7 @@ class AuthApi {
                password: data.password
             }) 
         })
-        .then((res) => {
-            if (res.ok) {
-                return res.json();
-            } else if (res.status === 400) {
-                return Promise.reject(`некорректно заполнено одно из полей`);
-            } 
-            return Promise.reject(`Error: ${res.status}`);
-        });
+        .then(this._checkResponse);
     }
 
     user() {
@@ -62,20 +40,18 @@ class AuthApi {
                 'Authorization' : `Bearer ${jwt}`,
             }
           })
-          .then((res) => {
-              if (res.ok) {
-                  return res.json();
-              } else if (res.status === 400) {
-                  return Promise.reject(`Токен не передан или передан не в том формате`);
-              } else if (res.status === 401) {
-                  return Promise.reject(`Переданный токен некорректен`);
-              } 
-              return Promise.reject(`Error: ${res.status}`);
-          });
+          .then(this._checkResponse);
     }
 
     logout() {
         localStorage.removeItem("jwt");
+    }
+
+    _checkResponse(res) {
+        if (res.ok) {
+            return res.json();
+        }
+        return Promise.reject(res);
     }
 }
 
